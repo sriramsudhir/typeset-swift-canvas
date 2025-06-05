@@ -13,6 +13,9 @@ export const CodeEditor: React.FC = () => {
     );
   }
 
+  const lines = activeFile.content.split('\n');
+  const lineCount = lines.length;
+
   return (
     <div className="h-full flex flex-col bg-white">
       {/* File tab */}
@@ -23,8 +26,8 @@ export const CodeEditor: React.FC = () => {
       {/* Line numbers and editor */}
       <div className="flex-1 flex overflow-hidden">
         {/* Line numbers */}
-        <div className="bg-gray-50 border-r border-gray-200 px-3 py-4 select-none">
-          {activeFile.content.split('\n').map((_, index) => (
+        <div className="bg-gray-50 border-r border-gray-200 px-3 py-4 select-none min-w-[50px]">
+          {lines.map((_, index) => (
             <div key={index} className="text-xs text-gray-400 leading-6 text-right">
               {index + 1}
             </div>
@@ -39,6 +42,7 @@ export const CodeEditor: React.FC = () => {
             className="w-full h-full p-4 border-none outline-none resize-none font-mono text-sm leading-6 bg-white"
             style={{ tabSize: 2 }}
             spellCheck={false}
+            placeholder="Start typing your LaTeX code..."
           />
         </div>
       </div>
@@ -48,7 +52,7 @@ export const CodeEditor: React.FC = () => {
         <div className="flex items-center space-x-4">
           <span>LaTeX</span>
           <span>UTF-8</span>
-          <span>Line {activeFile.content.split('\n').length}</span>
+          <span>Lines: {lineCount}</span>
         </div>
         <div className="flex items-center space-x-4">
           <span>Spaces: 2</span>

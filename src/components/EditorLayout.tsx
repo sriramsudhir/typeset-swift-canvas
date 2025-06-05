@@ -4,16 +4,27 @@ import { CodeEditor } from './CodeEditor';
 import { PDFPreview } from './PDFPreview';
 import { Button } from '@/components/ui/button';
 import { Play, Eye, Code, Split, Maximize2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const EditorLayout: React.FC = () => {
   const [viewMode, setViewMode] = useState<'split' | 'editor' | 'preview'>('split');
   const [isCompiling, setIsCompiling] = useState(false);
+  const { toast } = useToast();
 
   const handleCompile = () => {
     setIsCompiling(true);
+    toast({
+      title: "Compiling...",
+      description: "Your LaTeX document is being compiled.",
+    });
+    
     // Simulate compilation
     setTimeout(() => {
       setIsCompiling(false);
+      toast({
+        title: "Compilation successful!",
+        description: "Your document has been compiled successfully.",
+      });
     }, 2000);
   };
 
