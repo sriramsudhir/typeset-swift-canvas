@@ -4,6 +4,7 @@ import { Header } from '@/components/Header';
 import { Sidebar } from '@/components/Sidebar';
 import { EditorLayout } from '@/components/EditorLayout';
 import { ProjectProvider } from '@/contexts/ProjectContext';
+import { Toaster } from '@/components/ui/toaster';
 
 const Index = () => {
   return (
@@ -14,6 +15,7 @@ const Index = () => {
           <Sidebar />
           <EditorLayout />
         </div>
+        <Toaster />
       </div>
     </ProjectProvider>
   );
