@@ -1,9 +1,10 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { FileText, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { parseLatexContent, generatePDFContent, type ParsedLatexContent } from '@/utils/latexParser';
 
 interface PDFPreviewProps {
   isCompiled?: boolean;
@@ -18,6 +19,8 @@ declare global {
 export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) => {
   const { activeFile } = useProject();
   const { toast } = useToast();
+  const [parsedContent, setParsedContent] = useState<ParsedLatexContent | null>(null);
+  const [zoom, setZoom] = useState(100);
 
   useEffect(() => {
     // Load MathJax
@@ -46,13 +49,24 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) =>
   }, []);
 
   useEffect(() => {
-    if (isCompiled && window.MathJax && window.MathJax.typesetPromise) {
-      window.MathJax.typesetPromise();
+    if (activeFile && activeFile.type === 'tex' && isCompiled) {
+      console.log('Parsing LaTeX content:', activeFile.content);
+      const parsed = parseLatexContent(activeFile.content);
+      console.log('Parsed content:', parsed);
+      setParsedContent(parsed);
     }
-  }, [isCompiled]);
+  }, [activeFile, isCompiled]);
+
+  useEffect(() => {
+    if (isCompiled && window.MathJax && window.MathJax.typesetPromise) {
+      setTimeout(() => {
+        window.MathJax.typesetPromise();
+      }, 100);
+    }
+  }, [isCompiled, parsedContent]);
 
   const handleDownload = () => {
-    if (!isCompiled) {
+    if (!isCompiled || !parsedContent) {
       toast({
         title: "Cannot download",
         description: "Please compile the document first.",
@@ -61,15 +75,22 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) =>
       return;
     }
 
-    // Simulate PDF download
+    const pdfBase64 = generatePDFContent(parsedContent);
     const link = document.createElement('a');
-    link.href = 'data:application/pdf;base64,JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVGl0bGUgKExhVGVYIERvY3VtZW50KQovQ3JlYXRvciAoTGF0ZXggRWRpdG9yKQovUHJvZHVjZXIgKExhdGV4IEVkaXRvcikKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL0NhdGFsb2cKL1BhZ2VzIDMgMCBSCj4+CmVuZG9iagozIDAgb2JqCjw8Ci9UeXBlIC9QYWdlcwovS2lkcyBbNCAwIFJdCi9Db3VudCAxCj4+CmVuZG9iago0IDAgb2JqCjw8Ci9UeXBlIC9QYWdlCi9QYXJlbnQgMyAwIFIKL01lZGlhQm94IFswIDAgNjEyIDc5Ml0KPj4KZW5kb2JqCnhyZWYKMCA1CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDAwOSAwMDAwMCBuIAowMDAwMDAwMDc0IDAwMDAwIG4gCjAwMDAwMDAxMjEgMDAwMDAgbiAKMDAwMDAwMDE3OCAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9TaXplIDUKL1Jvb3QgMiAwIFIKPj4Kc3RhcnR4cmVmCjI1MQolJUVPRgo=';
-    link.download = `${activeFile?.name || 'document'}.pdf`;
+    link.href = `data:application/pdf;base64,${pdfBase64}`;
+    link.download = `${activeFile?.name?.replace('.tex', '') || 'document'}.pdf`;
     link.click();
 
     toast({
       title: "Download started",
       description: "Your PDF is being downloaded.",
+    });
+  };
+
+  const handleZoom = (direction: 'in' | 'out') => {
+    setZoom(prev => {
+      const newZoom = direction === 'in' ? Math.min(prev + 25, 200) : Math.max(prev - 25, 50);
+      return newZoom;
     });
   };
 
@@ -91,83 +112,125 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) =>
           <div className="text-center">
             <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
             <p className="text-lg">Click "Compile" to generate PDF preview</p>
+            <p className="text-sm mt-2">Edit your LaTeX code in the editor and compile to see changes</p>
           </div>
         </div>
       );
     }
 
-    // Enhanced LaTeX to HTML conversion with MathJax support
-    const content = activeFile.content;
-    const hasTitle = content.includes('\\title{');
-    const hasAuthor = content.includes('\\author{');
-    const hasDate = content.includes('\\date{');
+    if (!parsedContent) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <p className="text-lg">Processing LaTeX content...</p>
+          </div>
+        </div>
+      );
+    }
 
     return (
-      <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 p-8 overflow-auto">
-        <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-lg p-12 min-h-full border border-gray-200">
-          {/* Title page elements */}
-          {hasTitle && (
+      <div className="h-full bg-gradient-to-br from-gray-50 to-gray-100 p-4 overflow-auto">
+        <div 
+          className="max-w-4xl mx-auto bg-white shadow-2xl rounded-lg p-8 min-h-full border border-gray-200 transition-all duration-200"
+          style={{ 
+            transform: `scale(${zoom / 100})`,
+            transformOrigin: 'top center'
+          }}
+        >
+          {/* Title page */}
+          {(parsedContent.title || parsedContent.author || parsedContent.date) && (
             <div className="text-center mb-12 border-b border-gray-200 pb-8">
-              <h1 className="text-4xl font-bold mb-6 text-gray-900">Sample LaTeX Document</h1>
-              {hasAuthor && <p className="text-xl mb-3 text-gray-700">Your Name</p>}
-              {hasDate && <p className="text-base text-gray-600">June 5, 2025</p>}
+              {parsedContent.title && (
+                <h1 className="text-4xl font-bold mb-6 text-gray-900">{parsedContent.title}</h1>
+              )}
+              {parsedContent.author && (
+                <p className="text-xl mb-3 text-gray-700">{parsedContent.author}</p>
+              )}
+              {parsedContent.date && (
+                <p className="text-base text-gray-600">
+                  {parsedContent.date === '\\today' ? new Date().toLocaleDateString() : parsedContent.date}
+                </p>
+              )}
             </div>
           )}
 
-          {/* Content sections */}
-          <div className="space-y-8">
-            <section>
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 border-l-4 border-blue-500 pl-4">1. Introduction</h2>
-              <p className="text-gray-800 leading-relaxed mb-6 text-lg">
-                Here is the energy equation combining rest mass energy and kinetic energy:
+          {/* Sections */}
+          {parsedContent.sections.length > 0 && (
+            <div className="space-y-8">
+              {parsedContent.sections.map((section, index) => (
+                <section key={index}>
+                  <h2 className={`font-bold mb-4 text-gray-900 border-l-4 border-blue-500 pl-4 ${
+                    section.level === 1 ? 'text-2xl' : section.level === 2 ? 'text-xl' : 'text-lg'
+                  }`}>
+                    {section.level === 1 ? `${index + 1}. ` : ''}{section.title}
+                  </h2>
+                </section>
+              ))}
+            </div>
+          )}
+
+          {/* Math expressions */}
+          {parsedContent.mathExpressions.length > 0 && (
+            <div className="space-y-6 mt-8">
+              <h3 className="text-xl font-semibold text-gray-800">Mathematical Expressions</h3>
+              {parsedContent.mathExpressions.map((math, index) => (
+                <div key={index} className="bg-gray-50 p-6 rounded-lg border-l-4 border-blue-200">
+                  <div className="text-center text-lg">
+                    ${math}$
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Lists */}
+          {parsedContent.lists.length > 0 && (
+            <div className="space-y-6 mt-8">
+              <h3 className="text-xl font-semibold text-gray-800">Lists</h3>
+              {parsedContent.lists.map((list, listIndex) => (
+                <div key={listIndex} className="bg-gray-50 p-6 rounded-lg">
+                  {list.type === 'itemize' ? (
+                    <ul className="list-disc pl-6 space-y-2">
+                      {list.items.map((item, itemIndex) => (
+                        <li key={itemIndex} className="text-gray-700">{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ol className="list-decimal pl-6 space-y-2">
+                      {list.items.map((item, itemIndex) => (
+                        <li key={itemIndex} className="text-gray-700">{item}</li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Content preview from raw text */}
+          <div className="mt-8 space-y-4">
+            <h3 className="text-xl font-semibold text-gray-800">Document Content</h3>
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                {activeFile.content
+                  .replace(/\\documentclass\{[^}]+\}/g, '')
+                  .replace(/\\usepackage\{[^}]+\}/g, '')
+                  .replace(/\\begin\{document\}/g, '')
+                  .replace(/\\end\{document\}/g, '')
+                  .replace(/\\title\{[^}]+\}/g, '')
+                  .replace(/\\author\{[^}]+\}/g, '')
+                  .replace(/\\date\{[^}]+\}/g, '')
+                  .replace(/\\maketitle/g, '')
+                  .replace(/\\section\{[^}]+\}/g, '')
+                  .replace(/\\subsection\{[^}]+\}/g, '')
+                  .replace(/\\[a-zA-Z]+\{[^}]*\}/g, '')
+                  .replace(/\\\[[\s\S]*?\\\]/g, '')
+                  .replace(/\$\$[\s\S]*?\$\$/g, '')
+                  .replace(/\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g, '')
+                  .trim() || 'No content text found.'}
               </p>
-              <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-blue-200 my-8">
-                <div className="text-center">
-                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$E = mc^2 + \\frac{1}{2}mv^2$$' }} />
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 border-l-4 border-green-500 pl-4">2. Mathematical Expressions</h2>
-              <p className="text-gray-800 leading-relaxed mb-6 text-lg">
-                Some mathematical expressions and integrals:
-              </p>
-              
-              <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-green-200 my-8">
-                <div className="text-center">
-                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$\\int_0^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2} \\quad (1)$$' }} />
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-purple-200 my-8">
-                <div className="text-center">
-                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}$$' }} />
-                </div>
-              </div>
-
-              <div className="mt-8">
-                <h3 className="text-xl font-semibold mb-4 text-gray-800">2.1 Lists and Enumerations</h3>
-                <ul className="list-disc pl-8 space-y-2 text-gray-700">
-                  <li className="text-lg">First mathematical concept</li>
-                  <li className="text-lg">Second mathematical concept</li>
-                  <li className="text-lg">Third mathematical concept</li>
-                </ul>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 border-l-4 border-red-500 pl-4">3. Advanced Mathematics</h2>
-              <p className="text-gray-800 leading-relaxed mb-6 text-lg">
-                Matrix operations and linear algebra:
-              </p>
-              
-              <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-red-200 my-8">
-                <div className="text-center">
-                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix} \\begin{pmatrix} x \\\\ y \\end{pmatrix} = \\begin{pmatrix} ax + by \\\\ cx + dy \\end{pmatrix}$$' }} />
-                </div>
-              </div>
-            </section>
+            </div>
           </div>
         </div>
       </div>
@@ -186,11 +249,25 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) =>
         </div>
         
         <div className="flex items-center space-x-1">
-          <Button variant="ghost" size="sm" disabled={!isCompiled} className="hover:bg-gray-100">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            disabled={!isCompiled}
+            onClick={() => handleZoom('out')}
+            className="hover:bg-gray-100"
+          >
             <ZoomOut className="w-4 h-4" />
           </Button>
-          <span className="text-xs text-gray-500 px-3 font-medium">100%</span>
-          <Button variant="ghost" size="sm" disabled={!isCompiled} className="hover:bg-gray-100">
+          <span className="text-xs text-gray-500 px-3 font-medium min-w-[50px] text-center">
+            {zoom}%
+          </span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            disabled={!isCompiled}
+            onClick={() => handleZoom('in')}
+            className="hover:bg-gray-100"
+          >
             <ZoomIn className="w-4 h-4" />
           </Button>
           <div className="w-px h-4 bg-gray-300 mx-2" />
