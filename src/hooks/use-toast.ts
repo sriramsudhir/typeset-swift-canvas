@@ -26,5 +26,3 @@ export const useToast = () => {
 
   return { toast, toasts };
 };
-
-export { toast };
