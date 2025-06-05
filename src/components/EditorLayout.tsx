@@ -9,10 +9,13 @@ import { useToast } from '@/hooks/use-toast';
 export const EditorLayout: React.FC = () => {
   const [viewMode, setViewMode] = useState<'split' | 'editor' | 'preview'>('split');
   const [isCompiling, setIsCompiling] = useState(false);
+  const [isCompiled, setIsCompiled] = useState(false);
   const { toast } = useToast();
 
   const handleCompile = () => {
     setIsCompiling(true);
+    setIsCompiled(false);
+    
     toast({
       title: "Compiling...",
       description: "Your LaTeX document is being compiled.",
@@ -21,6 +24,7 @@ export const EditorLayout: React.FC = () => {
     // Simulate compilation
     setTimeout(() => {
       setIsCompiling(false);
+      setIsCompiled(true);
       toast({
         title: "Compilation successful!",
         description: "Your document has been compiled successfully.",
@@ -75,7 +79,9 @@ export const EditorLayout: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-500">Auto-compile: ON</span>
+          <span className="text-xs text-gray-500">
+            Status: {isCompiling ? 'Compiling...' : isCompiled ? 'Compiled' : 'Ready'}
+          </span>
           <Button variant="ghost" size="sm">
             <Maximize2 className="w-4 h-4" />
           </Button>
@@ -96,14 +102,14 @@ export const EditorLayout: React.FC = () => {
               <CodeEditor />
             </div>
             <div className="flex-1">
-              <PDFPreview />
+              <PDFPreview isCompiled={isCompiled} />
             </div>
           </>
         )}
         
         {viewMode === 'preview' && (
           <div className="flex-1">
-            <PDFPreview />
+            <PDFPreview isCompiled={isCompiled} />
           </div>
         )}
       </div>

@@ -4,10 +4,13 @@ import { useProject } from '@/contexts/ProjectContext';
 import { FileText, Download, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export const PDFPreview: React.FC = () => {
+interface PDFPreviewProps {
+  isCompiled?: boolean;
+}
+
+export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) => {
   const { activeFile } = useProject();
 
-  // Mock PDF content based on LaTeX
   const renderPreview = () => {
     if (!activeFile || activeFile.type !== 'tex') {
       return (
@@ -15,6 +18,17 @@ export const PDFPreview: React.FC = () => {
           <div className="text-center">
             <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <p>Select a .tex file to preview</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!isCompiled) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="text-center">
+            <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Click "Compile" to generate PDF preview</p>
           </div>
         </div>
       );
@@ -28,7 +42,7 @@ export const PDFPreview: React.FC = () => {
     const hasMath = content.includes('\\[') || content.includes('\\begin{equation}');
 
     return (
-      <div className="h-full bg-white p-8 overflow-auto">
+      <div className="h-full bg-gray-100 p-8 overflow-auto">
         <div className="max-w-2xl mx-auto bg-white shadow-lg p-12 min-h-full">
           {/* Title page elements */}
           {hasTitle && (
@@ -91,22 +105,23 @@ export const PDFPreview: React.FC = () => {
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium text-gray-700">PDF Preview</span>
-          <div className="w-2 h-2 bg-green-500 rounded-full" title="Compiled successfully"></div>
+          <div className={`w-2 h-2 rounded-full ${isCompiled ? 'bg-green-500' : 'bg-gray-400'}`} 
+               title={isCompiled ? "Compiled successfully" : "Not compiled"}></div>
         </div>
         
         <div className="flex items-center space-x-1">
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" disabled={!isCompiled}>
             <ZoomOut className="w-4 h-4" />
           </Button>
           <span className="text-xs text-gray-500 px-2">100%</span>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" disabled={!isCompiled}>
             <ZoomIn className="w-4 h-4" />
           </Button>
           <div className="w-px h-4 bg-gray-300 mx-2" />
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" disabled={!isCompiled}>
             <RotateCw className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" disabled={!isCompiled}>
             <Download className="w-4 h-4" />
           </Button>
         </div>
