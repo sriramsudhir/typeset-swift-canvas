@@ -1,7 +1,7 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
-(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
+(pdfMake as any).vfs = pdfFonts.default.pdfMake.vfs;
 
 export interface ParsedLatexContent {
   title?: string;
