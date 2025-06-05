@@ -123,7 +123,7 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) =>
               </p>
               <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-blue-200 my-8">
                 <div className="text-center">
-                  <span className="text-xl">$$E = mc^2 + \frac{1}{2}mv^2$$</span>
+                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$E = mc^2 + \\frac{1}{2}mv^2$$' }} />
                 </div>
               </div>
             </section>
@@ -136,13 +136,13 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) =>
               
               <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-green-200 my-8">
                 <div className="text-center">
-                  <span className="text-xl">$$\int_0^{\infty} e^{-x^2} dx = \frac{\sqrt{\pi}}{2} \quad (1)$$</span>
+                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$\\int_0^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2} \\quad (1)$$' }} />
                 </div>
               </div>
 
               <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-purple-200 my-8">
                 <div className="text-center">
-                  <span className="text-xl">$$\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}$$</span>
+                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}$$' }} />
                 </div>
               </div>
 
@@ -164,7 +164,7 @@ export const PDFPreview: React.FC<PDFPreviewProps> = ({ isCompiled = false }) =>
               
               <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-red-200 my-8">
                 <div className="text-center">
-                  <span className="text-xl">$$\begin{pmatrix} a & b \\ c & d \end{pmatrix} \begin{pmatrix} x \\ y \end{pmatrix} = \begin{pmatrix} ax + by \\ cx + dy \end{pmatrix}$$</span>
+                  <span className="text-xl" dangerouslySetInnerHTML={{ __html: '$$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix} \\begin{pmatrix} x \\\\ y \\end{pmatrix} = \\begin{pmatrix} ax + by \\\\ cx + dy \\end{pmatrix}$$' }} />
                 </div>
               </div>
             </section>
